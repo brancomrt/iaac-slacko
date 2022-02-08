@@ -1,4 +1,4 @@
-# Instrucoes para execucao da playbook de instalacao da aplicação slacko
+# Instrucoes para execução da playbook de instalação da aplicação slacko
 
 - Caso deseja executar em sua maquina local, copiar os arquivos da pasta ansible (inventory,playbook.yml) para o diretorio home de seu usuario.
 
