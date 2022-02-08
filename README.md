@@ -20,7 +20,7 @@
   
   vagrant up
   
-  - Logar na maquina virtual "server"
+- Logar na maquina virtual "server"
   
   cd ~/iaac-slacko/
   
