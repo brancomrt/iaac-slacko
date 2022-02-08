@@ -1,4 +1,4 @@
-# Instrucoes para execucao da playbook de instalacao da aplicacao slacko
+# Instrucoes para execucao da playbook de instalacao da aplicação slacko
 
 - Caso deseja executar em sua maquina local, copiar os arquivos da pasta ansible (inventory,playbook.yml) para o diretorio home de seu usuario.
 
@@ -6,7 +6,7 @@
 
 - Executar a playbook.
 
-# Instrucoes de instalacao da aplicacao slacko em maquina virtual qemu/kvm no Vagrant
+# Instrucoes de instalacao da aplicação slacko em maquina virtual qemu/kvm no Vagrant
 
 - Criar o diretorio iaac-slacko em seu diretorio home do usuário:
 
