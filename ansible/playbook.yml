@@ -55,10 +55,9 @@
       pip:
         name: docker
     
-    - name: Adicionar Usuario Vagrant no Grupo Docker
+    - name: Adicionar Usuario Home no Grupo Docker
       user:
-        name: vagrant
-        comment: Vagrant User
+        name: "{{ home_user }}"
         groups: docker
     
     - name: Alterando permissao do arquivo /var/run/docker.sock
@@ -86,8 +85,8 @@
       file: 
         path: "{{ app_destdir }}"
         state: directory
-        owner: vagrant
-        group: vagrant
+        owner: "{{ home_user }}"
+        group: "{{ home_user }}"
         mode: 0755
     
     - name: Baixando a aplicacao slacko-api do repositorio Git
@@ -139,7 +138,7 @@
           EOF
     
     - name: "Ativando o servico slacko.service"
-      become_user: vagrant
+      become_user: "{{ home_user }}"
       systemd:
         scope: user
         daemon_reload: yes
@@ -147,7 +146,7 @@
         enabled: yes
 
     - name: "Reiniciando o servico slacko.service"
-      become_user: vagrant
+      become_user: "{{ home_user }}"
       systemd:
         scope: user
         name: slacko
