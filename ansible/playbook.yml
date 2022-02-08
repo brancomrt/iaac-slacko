@@ -1,0 +1,169 @@
+---
+- hosts: server
+  become: true
+  become_method: sudo
+  become_user: root
+  gather_facts: False
+  
+  vars:
+    mongodb_express_container_name: mongodb
+    mongodb_express_container_image: mongo-express:0.54.0
+    mongodb_express_container_command: sleep 1d
+    mongodb_express_port: '8081:8081'
+    mongodb_name: mongodb
+    app_destdir: '/opt/slacko-api'
+    home_user: vagrant
+    apiservice_name: '/home/vagrant/.config/systemd/user/slacko.service'
+
+  tasks:
+    - name: Instalando Pacotes Requeridos do Sistema
+      apt: name={{ item }} state=latest update_cache=yes
+      loop: [ 'apt-transport-https', 'ca-certificates', 'curl', 'software-properties-common', 'python3-pip', 'virtualenv', 'python3-setuptools']
+
+    - name: Instalando aptitude usando apt
+      apt: 
+        name: aptitude 
+        state: latest 
+        update_cache: yes  
+    
+    - name: Instalando mongoDB
+      apt: 
+        name: "{{ mongodb_name }}"
+        state: present
+        update_cache: yes
+
+    - name: Habilitando servico do mongodb na inicializacao do SO
+      systemd:
+        name: "{{ mongodb_name }}"
+        enabled: yes
+        state: started
+
+    - name: Adicionando Docker GPG apt Key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Aicionando Docker Repository
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu bionic stable
+        state: present
+   
+    - name: Atualizando apt e instalando docker-ce
+      apt: update_cache=yes name=docker-ce state=latest
+    
+    - name: Instalando Docker Module para Python
+      pip:
+        name: docker
+    
+    - name: Adicionar Usuario Vagrant no Grupo Docker
+      user:
+        name: vagrant
+        comment: Vagrant User
+        groups: docker
+    
+    - name: Alterando permissao do arquivo /var/run/docker.sock
+      ansible.builtin.file:
+        path: /var/run/docker.sock
+        owner: root
+        group: docker
+        mode: '0666'
+
+    - name: Baixando a imagem do mongodb-express 
+      docker_image:
+        name: "{{ mongodb_express_container_image }}"
+        source: pull
+
+    - name: Criando o container do mongodb-express
+      docker_container:
+        name: "{{ mongodb_express_container_name }}"
+        image: "{{ mongodb_express_container_image }}"
+        command: "{{ mongodb_express_container_command }}"
+        ports:
+          - "{{ mongodb_express_port }}"
+        #restart: yes
+
+    - name: Criando diretorio da aplicacao
+      file: 
+        path: "{{ app_destdir }}"
+        state: directory
+        owner: vagrant
+        group: vagrant
+        mode: 0755
+    
+    - name: Baixando a aplicacao slacko-api do repositorio Git
+      git:
+        repo: 'https://github.com/LeonardoDG2084/iaac_slacko-api.git'
+        dest: "{{ app_destdir }}"
+        clone: yes
+        update: yes
+
+    - name: Instalando python libraries e requirements 
+      pip:
+        requirements: requeriments.txt
+        chdir: "{{ app_destdir }}"
+
+    - name: Alterando permissoes do diretorio /opt/slacko-api
+      file:
+        dest: "{{ item }}"
+        owner: vagrant
+        group: vagrant    
+      with_items:
+        - /opt/slacko-api/slacko-api.sh
+        - /opt/slacko-api/requeriments.txt
+        - /opt/slacko-api/README.md
+        - /opt/slacko-api/main.py 
+
+    - name: Criando diretorio do servico slacko.service no home do usuario vagrant
+      file: 
+        path: "/home/vagrant/.config/systemd/user"
+        state: directory
+        owner: "{{ home_user }}"
+        group: "{{ home_user }}"
+        mode: 0755
+
+    - name: Criando servico da API slacko.service
+      shell:
+        cmd: |
+          cat > /home/vagrant/.config/systemd/user/slacko.service << EOF
+          [Unit]
+          Description=Slacko API
+          After=network.target
+
+          [Service]
+          RemainAfterExit=true
+          ExecStart=/opt/slacko-api/slacko-api.sh
+          StandardOutput=journal
+
+          [Install]
+          WantedBy=default.target
+          EOF
+    
+    - name: "Ativando o servico slacko.service"
+      become_user: vagrant
+      systemd:
+        scope: user
+        daemon_reload: yes
+        name: slacko
+        enabled: yes
+
+    - name: "Reiniciando o servico slacko.service"
+      become_user: vagrant
+      systemd:
+        scope: user
+        name: slacko
+        daemon_reload: yes
+        state: restarted
+      become: yes
+
+    - name: Aguardando a porta 8000 entrar em escuta apos reinicializacao do servico slacko.service
+      wait_for:
+        port: 8000
+        delay: 2
+
+    - name: Verificando se pode se conectar (GET) a página e ela retorna um status 200
+      uri:
+        url: "http://127.0.0.1:8000/healthcheck"
+        method: GET
+        status_code: 200
+    
+  
