@@ -61,7 +61,7 @@
         groups: docker
     
     - name: Alterando permissao do arquivo /var/run/docker.sock
-      ansible.builtin.file:
+      file:
         path: /var/run/docker.sock
         owner: root
         group: docker
@@ -136,6 +136,12 @@
           [Install]
           WantedBy=default.target
           EOF
+
+    - name: Alterando permissao do servico slacko.service
+      file:
+        path: /home/{{ home_user }}/.config/systemd/user/slacko.service
+        owner: "{{ home_user }}"
+        group: "{{ home_user }}"
     
     - name: "Ativando o servico slacko.service"
       become_user: "{{ home_user }}"
