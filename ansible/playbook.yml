@@ -13,7 +13,7 @@
     mongodb_name: mongodb
     app_destdir: '/opt/slacko-api'
     home_user: vagrant
-    apiservice_name: '/home/vagrant/.config/systemd/user/slacko.service'
+    apiservice_name: '/home/{{ home_user }}/.config/systemd/user/slacko.service'
 
   tasks:
     - name: Instalando Pacotes Requeridos do Sistema
@@ -104,17 +104,17 @@
     - name: Alterando permissoes do diretorio /opt/slacko-api
       file:
         dest: "{{ item }}"
-        owner: vagrant
-        group: vagrant    
+        owner: "{{ home_user }}"
+        group: "{{ home_user }}"    
       with_items:
         - /opt/slacko-api/slacko-api.sh
         - /opt/slacko-api/requeriments.txt
         - /opt/slacko-api/README.md
         - /opt/slacko-api/main.py 
 
-    - name: Criando diretorio do servico slacko.service no home do usuario vagrant
+    - name: Criando diretorio do servico slacko.service no home do usuario {{ home_user }}
       file: 
-        path: "/home/vagrant/.config/systemd/user"
+        path: "/home/{{ home_user }}/.config/systemd/user"
         state: directory
         owner: "{{ home_user }}"
         group: "{{ home_user }}"
@@ -123,7 +123,7 @@
     - name: Criando servico da API slacko.service
       shell:
         cmd: |
-          cat > /home/vagrant/.config/systemd/user/slacko.service << EOF
+          cat > /home/{{ home_user }}/.config/systemd/user/slacko.service << EOF
           [Unit]
           Description=Slacko API
           After=network.target
